@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+
+# 临时与日志
+*.log
+*.pid
+.env
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini

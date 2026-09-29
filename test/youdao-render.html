@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>有道词典版 - 有道渲染验证（假 background）</title>
+<link rel="stylesheet" href="../content.css">
+<style>
+  body { margin: 0; background: #181818; font-family: Roboto, "Microsoft YaHei", sans-serif; color: #eee; }
+  .stage { padding: 24px; }
+  .html5-video-player {
+    position: relative; width: 960px; height: 540px; background: #000;
+    overflow: visible; user-select: none; -webkit-user-select: none;
+  }
+  video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ytp-caption-window-container { position: absolute; bottom: 60px; left: 40px; right: 40px; text-align: center; pointer-events: none; }
+  .captions-text { display: inline-block; }
+  .ytp-caption-segment {
+    display: inline-block; background: rgba(8,8,8,.75); color: #fff;
+    font-size: 22px; line-height: 1.35; padding: 3px 8px; pointer-events: auto;
+  }
+  .ytp-subtitles-button {
+    position: absolute; bottom: 8px; left: 16px; color: #fff; font-size: 12px;
+    background: rgba(255,255,255,.1); border: 1px solid #444; padding: 4px 10px; border-radius: 4px; cursor: pointer;
+  }
+  .hint { margin-top: 16px; font-size: 13px; color: #aaa; max-width: 960px; }
+  code { color: #8ab4f8; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <!-- 模拟 YouTube 播放器 -->
+  <div class="html5-video-player" id="movie_player">
+    <video id="v" muted loop></video>
+
+    <!-- 原生英文字幕（结构与 YouTube 一致：pointer-events:none 容器 + 可见分段） -->
+    <div class="ytp-caption-window-container">
+      <div><span class="captions-text"><span class="ytp-caption-segment" id="seg1">The quick brown fox jumps over the lazy dog</span></span></div>
+    </div>
+
+    <button class="ytp-subtitles-button" id="ccbtn" aria-pressed="false">CC 开/关</button>
+  </div>
+
+  <div class="hint">
+    测试要点：① 双击原生字幕里的任意单词 → 弹出查词弹窗；② 按住拖选短语 → 弹窗；③ 双击下方“沉浸式翻译模拟覆盖层”的英文行 → 弹窗（closed shadow root）；
+    ④ 点击播放器右上角 <code>字幕：双语</code> 按钮 → 仅英文模式（隐藏中文行或整个覆盖层+开启CC）；⑤ Esc / 点击空白处关闭弹窗。
+  </div>
+</div>
+
+<!-- content-main.js 必须在 attachShadow 之前加载，模拟 MAIN world document_start 注入 -->
+<script>
+  // 假 background：模拟扩展环境 chrome.runtime，返回有道词典真实结构的数据
+  window.chrome = { runtime: { id: "test-extension", sendMessage: (msg, cb) => {
+    setTimeout(() => cb({
+      ok: true, provider: "youdao",
+      translation: "您好",
+      dict: [{pos:"int.",terms:["喂，你好（用于问候或打招呼）"]},{pos:"n.",terms:["招呼，问候"]},{pos:"v.",terms:["说（或大声说）喂；打招呼"]}],
+      phonetics: { us: "həˈloʊ", uk: "həˈləʊ" },
+      audio: { us: "https://dict.youdao.com/dictvoice?audio=hello&type=2", uk: "https://dict.youdao.com/dictvoice?audio=hello&type=1" },
+      wfs: ["复数 hellos", "第三人称单数 helloes", "现在分词 helloing", "过去式 helloed", "过去分词 helloed"]
+    }), 30);
+  } } };
+</script>
+<script src="../content-main.js"></script>
+
+<!-- 模拟沉浸式翻译字幕覆盖层：覆盖在播放器之上，closed shadow root + pointer-events:none + user-select:none，双语行上下堆叠 -->
+<script>
+  const host = document.createElement('div');
+  host.id = 'immersive-translate-subtitle-overlay';
+  // 悬停在播放器下部（与真实沉浸式翻译一致）：播放器区域为 y 24~564
+  host.style.cssText = 'position:fixed;left:64px;right:64px;bottom:300px;text-align:center;pointer-events:none;z-index:999;';
+  document.body.appendChild(host);
+  const root = host.attachShadow({ mode: 'closed' });
+  root.innerHTML =
+    '<div style="user-select:none;-webkit-user-select:none;text-align:center">' +
+    '<div class="immersive-translate-subtitle-wrapper">' +
+    '<div class="immersive-translate-source-line" style="color:#fff;font-size:22px;background:rgba(8,8,8,.75);padding:3px 8px;display:inline-block;margin-bottom:4px">Knowledge is power, but enthusiasm pulls the switch.</div><br>' +
+    '<div class="immersive-translate-target-wrapper" style="color:#ffe082;font-size:19px;background:rgba(8,8,8,.75);padding:3px 8px;display:inline-block">知识就是力量，但热情拉动开关。</div>' +
+    '</div></div>';
+</script>
+
+<!-- 模拟字幕换行（验证高亮/隐藏在重渲染后仍生效） -->
+<script>
+  const lines = [
+    'The quick brown fox jumps over the lazy dog',
+    'A journey of a thousand miles begins with a single step',
+    'Actions speak louder than words'
+  ];
+  let i = 0;
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'n') {
+      i = (i + 1) % lines.length;
+      document.getElementById('seg1').textContent = lines[i];
+    }
+  });
+  document.getElementById('ccbtn').addEventListener('click', function () {
+    this.setAttribute('aria-pressed', this.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+    this.style.color = this.getAttribute('aria-pressed') === 'true' ? '#ffd54f' : '#fff';
+  });
+</script>
+
+<!-- 内容脚本（模拟注入） -->
+<script src="../content.js"></script>
+</body>
+</html>

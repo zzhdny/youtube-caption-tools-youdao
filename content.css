@@ -1,0 +1,14 @@
+/* 让 YouTube 原生字幕恢复可选中（播放器默认 user-select:none 且会拦截鼠标） */
+.ytp-caption-segment,
+.captions-text {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  pointer-events: auto;
+  cursor: text;
+}
+
+/* 自定义划选/取词的高亮样式（CSS Custom Highlight API） */
+::highlight(yt-sub-sel) {
+  background-color: rgba(255, 213, 79, 0.9);
+  color: #111;
+}

@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube 字幕取词·有道词典",
+  "version": "1.0.3",
+  "description": "有道词典主导的 YouTube 字幕取词：拖选/双击弹出有道翻译与词典释义，一键收藏到有道生词本；并为沉浸式翻译字幕提供“仅英文”开关。",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://dict.youdao.com/*",
+    "https://translate.googleapis.com/*",
+    "https://clients5.google.com/*",
+    "https://api.mymemory.translated.net/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://m.youtube.com/*",
+        "https://www.youtube-nocookie.com/*"
+      ],
+      "js": ["content-main.js"],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://m.youtube.com/*",
+        "https://www.youtube-nocookie.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ]
+}
